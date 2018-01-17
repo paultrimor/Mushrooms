@@ -10,7 +10,7 @@ function setup() {
 	canvas.parent('canvas-wrapper'); 
 
 	// initialize first mushroom 
-	var first_fruit = new Fruit(canvas_width/2); 
+	var first_fruit = new Fruit(canvas_width/5); 
 	// Parameters for initalize(fruit_height, fruit_cap_width, friut_cap_height, fruit_bend) 
 	first_fruit.initialize(100, 50, 30, 0); 
 	fruits.push(first_fruit);
@@ -39,7 +39,11 @@ function draw() {
 		spores[i].update(); 
 
 		if (spores[i].is_ready_to_fruit) {
-			fruits.push(new Fruit(spores[i].x)); 
+			//survival rate
+			if (random(0,1) > 0.4){ 
+				fruits.push(new Fruit(spores[i].x)); 
+			}
+			
 		}
 
 		if (spores[i].is_dead) {
@@ -47,12 +51,6 @@ function draw() {
 		}
 	}
 }
-
-
-function mousePressed() {
-	fruits.push(new Fruit(random(0, canvas_width)));
-}
-
 
 
 
@@ -155,7 +153,7 @@ Fruit.prototype.update = function() {
 			
 		}
 
-		if (this.pct > 1.001 && this.pct < 1.005) {
+		if (this.pct > 1.001 && this.pct < 1.010) {
 			this.is_ready_to_spore = true; 
 		} else {
 			this.is_ready_to_spore = false;
@@ -233,7 +231,7 @@ Spore.prototype.update = function(){
 		if (this.x > canvas_width){
 			this.x = 0; 
 		}
-		this.x += map(noise(this.tx), 0, 1, -10, 10); 
+		this.x += map(noise(this.tx), 0, 1, -7, 7); 
 		this.y += map(noise(this.ty), 0, 1, -1, 1.8);			
 	}
 
@@ -258,7 +256,7 @@ Spore.prototype.update = function(){
 }
 
 Spore.prototype.display = function() {
-	fill(color(255,100, 0, this.health)); 
+	fill(color(255, 204, 0, this.health)); 
 	ellipse(this.x, this.y, 3, 3);
 }
 
