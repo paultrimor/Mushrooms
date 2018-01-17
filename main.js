@@ -40,7 +40,7 @@ function draw() {
 
 		if (spores[i].is_ready_to_fruit) {
 			//survival rate
-			if (random(0,1) > 0.4){ 
+			if (random(0,1) > 0.3){ 
 				fruits.push(new Fruit(spores[i].x)); 
 			}
 			
@@ -231,7 +231,7 @@ Spore.prototype.update = function(){
 		if (this.x > canvas_width){
 			this.x = 0; 
 		}
-		this.x += map(noise(this.tx), 0, 1, -7, 7); 
+		this.x += map(noise(this.tx), 0, 1, -5, 5); 
 		this.y += map(noise(this.ty), 0, 1, -1, 1.8);			
 	}
 
@@ -256,7 +256,7 @@ Spore.prototype.update = function(){
 }
 
 Spore.prototype.display = function() {
-	fill(color(255, 204, 0, this.health)); 
+	fill(color(255, 225, 0, this.health)); 
 	ellipse(this.x, this.y, 3, 3);
 }
 
