@@ -5,6 +5,8 @@ var ground_level = canvas_height - canvas_height/10;
 var fruits = []; 
 var spores = []; 
 
+var K = 30; // Fruit Population carrying capacity; 
+
 function setup() {
 	var canvas = createCanvas(canvas_width, canvas_height); 
 	canvas.parent('canvas-wrapper'); 
@@ -27,10 +29,13 @@ function draw() {
 		
 		if (fruits[i].is_ready_to_spore) {
 			spores.push(fruits[i].spore());
-
 		}
 
 		fruits[i].display(); 
+
+		if (fruits[i].is_dead) {
+			fruits.splice(i, 1);
+		}
 	}
 
 	// Spore Scan 
@@ -39,15 +44,18 @@ function draw() {
 		spores[i].update(); 
 
 		if (spores[i].is_ready_to_fruit) {
-			//survival rate
-			if (random(0,1) > 0.3){ 
+
+			// Enfore Carrying Capacity 
+			var survival_prob = (K-fruits.length)/K; 
+			console.log(survival_prob);
+			if (random(0, 1) < survival_prob) {
 				fruits.push(new Fruit(spores[i].x)); 
-			}
-			
+				spores[i].fruited = true; 
+			}						
 		}
 
 		if (spores[i].is_dead) {
-			// remove the spore to save memory 
+			spores.splice(i, 1);
 		}
 	}
 }
@@ -59,7 +67,7 @@ function Fruit(x) {
 
 	// Dna variables
 	this.fruit_height = random(50, 180); 
-	this.fruit_bend = random(-40, 40);
+	this.fruit_bend = 0 //random(-40, 40);
 	this.cap_color =  color(random(50, 150), random(50, 150), random(0, 250)); 
 	this.stem_color = color(255, random(100, 255), random(100, 220));
 	this.fruit_cap_width = random(30,100);
@@ -77,7 +85,11 @@ function Fruit(x) {
 	this.dist_y = this.final_y - this.init_y; 
 
 	// State vairables 
+	this.health = 225; 
+	this.death_rate = 0.5; 
 	this.is_ready_to_spore = false; 
+	this.is_dying = false; 
+	this.is_dead = false; 
 
 	// Structure variables (Mushroom Stem) 
 	this.beizer_radius = 20;  
@@ -153,10 +165,18 @@ Fruit.prototype.update = function() {
 			
 		}
 
-		if (this.pct > 1.001 && this.pct < 1.010) {
+		if (this.pct > 1.001 && this.pct < 1.005) {
 			this.is_ready_to_spore = true; 
 		} else {
 			this.is_ready_to_spore = false;
+		}
+
+		if (this.pct > 1.5) {
+			this.health -= this.death_rate; 
+		}
+
+		if (this.health < 0) {
+			this.is_dead = true;
 		}
 
 }
@@ -164,6 +184,7 @@ Fruit.prototype.update = function() {
 Fruit.prototype.display = function() {
 		noStroke(0); 
 		
+		this.stem_color.setAlpha(this.health);
 		fill(this.stem_color);
 		beginShape();
 			curveVertex(this.init_x + this.radius/2, this.init_y);
@@ -178,6 +199,7 @@ Fruit.prototype.display = function() {
 			curveVertex(this.init_x - this.radius/2, this.init_y);
 		endShape();
 
+		this.cap_color.setAlpha(this.health);
 		fill(this.cap_color);
 		push();
 			translate(this.head_x, this.head_y);
@@ -190,7 +212,6 @@ Fruit.prototype.display = function() {
 Fruit.prototype.spore = function() {
 	this.spore_position.set(parseFloat(random(-this.fruit_cap_width/2, this.fruit_cap_width/2)), 0); 
 	this.spore_position.rotate(-atan(this.slope_x/this.slope_y)); 
-	console.log("spore position: " + this.spore_position);
 	return (new Spore(
 		this.head_x + this.spore_position.x, 
 		this.head_y + this.spore_position.y, 
@@ -206,8 +227,8 @@ function Spore(x, y){
 	this.y = y; 
 
 	// Animation variables 
-	this.tx = 100*random(0,1); 
-	this.ty = 300*random(0,1); 
+	this.tx = 300*random(0,1); 
+	this.ty = 100*random(0,1); 
 	this.step = 0.001; 
 
 	// State variables 
@@ -215,7 +236,8 @@ function Spore(x, y){
 	this.death_rate = 0.0; 	
 	this.on_ground = false; 
 	this.is_dead = false; 
-	this.is_ready_to_fruit = false; 
+	this.is_ready_to_fruit = false;
+	this.fruited = false; 
 
 }
 
@@ -223,7 +245,6 @@ Spore.prototype.update = function(){
 
 	if (this.y > ground_level ){
 		this.on_ground = true; 
-		this.is_dead = true; 
 	} else {
 		if (this.x < 0) {
 			this.x = canvas_width;
@@ -231,8 +252,8 @@ Spore.prototype.update = function(){
 		if (this.x > canvas_width){
 			this.x = 0; 
 		}
-		this.x += map(noise(this.tx), 0, 1, -5, 5); 
-		this.y += map(noise(this.ty), 0, 1, -1, 1.8);			
+		this.x += map(noise(this.tx), 0, 1, -2, 2); 
+		this.y += map(noise(this.ty), 0, 1, -0.5, 1);			
 	}
 
 	this.tx += this.step; 
@@ -242,13 +263,13 @@ Spore.prototype.update = function(){
 		this.death_rate = 1; 
 	}
 
-	if (this.health == 50) {
+	if (this.health < 50 && this.fruited == false) {
 		this.is_ready_to_fruit = true; 
 	} else {
 		this.is_ready_to_fruit = false; 
 	}
 
-	if (this.health < 0) {
+	if (this.health <= 0) {
 		this.is_dead = true; 
 	}
 
